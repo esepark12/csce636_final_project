@@ -4,7 +4,7 @@ import numpy as np
 from Configure import model_configs, training_configs
 import torch, torchvision
 import torchvision.transforms as transforms
-import PrivateDataset
+from torch.utils.data import Dataset
 """This script implements the functions for reading data.
 """
 CIFAR_norm_means = (0.4914, 0.4822, 0.4465)
@@ -29,27 +29,27 @@ def load_data(data_dir, mode):
     """
 
     ### YOUR CODE HERE
-    # transform with training augmentation
+    # training augmentation
     if mode is 'train':
         train_transform = training_configs['train_transform']
     else: # test
-        train_transform = transforms.Compose([ # defualt transform which only normalizes the data set
+        train_transform = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds) # normalize dataset
+            transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds)
         ])
 
-    default_transform = transforms.Compose([ # defualt transform which only normalizes the data set
+    default_transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds) # normalize dataset
+        transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds)
     ])
     xytrain = torchvision.datasets.CIFAR10(
         root=data_dir, train=True, download=True, transform=train_transform)
     xytest = torchvision.datasets.CIFAR10(
         root=data_dir, train=False, download=False, transform=default_transform)
     xytrain_orig = torchvision.datasets.CIFAR10(
-        root=data_dir, train=True, download=False, transform=default_transform) #original trainingset without augmentation
+        root=data_dir, train=True, download=False, transform=default_transform) #original train dataset
 
     ### END CODE HERE
 
@@ -69,12 +69,13 @@ def load_testing_images(data_dir):
     """
 
     ### YOUR CODE HERE
-    default_transform = transforms.Compose([ # defualt transform which only normalizes the data set
+    default_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds) # normalize dataset
     ])
-    images = np.load(data_dir + '/private_test_images.npy')
-    x_test = PrivateDataset.CSCE_636_PrivateDataset(data_dir,transform=default_transform)
+    file_path = data_dir + '/private_test_images.npy'
+    images = np.load(file_path)
+    x_test = PrivateTestImage(file_path,transform=default_transform)
     ### END CODE HERE
 
     return x_test
@@ -110,3 +111,25 @@ def train_valid_split(train, orig_trainset, train_ratio=0.8):
 
     return train_new,valid
 
+class PrivateTestImage(Dataset):
+
+    def __init__(self, file_path, transform=None):
+        self.images = np.load(file_path)
+        if transform is not None:
+            self.transform = transform
+        else:
+            self.transform = None
+
+    def __len__(self):
+        return self.images.shape[0] # image batch is shape [n,32,32,3]
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        sample = self.images[idx] # [n,3,32,32]
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample

@@ -3,13 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os, time, sys
 import numpy as np
-from Network3 import MyNetwork
+from Network import MyNetwork
 #from Network2 import MyNetwork
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import tqdm
 import matplotlib
-matplotlib.use('Agg') # command-line use only
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 
@@ -44,12 +44,14 @@ class MyModel(object):
 
     def train(self, train,configs,valid=None,test=None,checkpoint=None):
 
-        if valid is not None and test is not None:
-            raise('Only supply validation or test data, not both!')
+        self.network = self.network.to('cuda')
+
+        if valid is not None:
+            if test is not None:
+                raise('Cannot do validation and test at the same time')
             return
 
         self.writer = SummaryWriter('../runs/' + configs['experiment_name'] + time.strftime("_%Y-%m-%d_%H%M%S"))
-        self.network = self.network.to('cuda')
 
         if checkpoint is not None:
             epoch,accuracy_type,prev_accuracy =  (checkpoint[k] for k in ['epoch','accuracy_type','accuracy'])
@@ -59,18 +61,19 @@ class MyModel(object):
             else:
                 prev_valid_accuracy = prev_accuracy
         else:
-            epoch = 0
             prev_test_accuracy = 0
             prev_valid_accuracy = 0
+            epoch = 0
 
-        torch.backends.cudnn.benchmark = True  # good for when input size doesn't change (32x32x3)
+        torch.backends.cudnn.benchmark = True
 
         batch_size = configs['batch_size']
         lr = configs['initial_lr']
         self.train_loader = torch.utils.data.DataLoader(train,batch_size,shuffle=True)
 
         self.optimizer =  torch.optim.SGD(self.network.parameters(), lr=lr,
-                                          momentum=0.9, weight_decay=5e-4) # initialize optimizer #TODO - Grab variables from Configs
+                                          momentum=0.9, weight_decay=5e-4)
+
         scheduler = ReduceLROnPlateau(self.optimizer, 'min')
         criterion = nn.CrossEntropyLoss()
 
@@ -81,18 +84,18 @@ class MyModel(object):
             with tqdm.tqdm(total = len(self.train_loader)) as epoch_pbar:
                 train_total = 0
                 train_correct = 0
-                for batch_idx, (x_train, y_train) in enumerate(self.train_loader): # use train loader to enumerate over batches
+                for batch_idx, (x_train, y_train) in enumerate(self.train_loader):
                     # predict
                     self.optimizer.zero_grad() # set gradients to zero
                     y_preds = self.network(x_train.to('cuda'))
                     loss = criterion(y_preds, y_train.to('cuda'))
 
-                    # accuracy check
-                    train_correct += self.score(y_preds,y_train.to('cuda')) # get running average of train accuracy
+                    # get accuracy
+                    train_correct += self.score(y_preds,y_train.to('cuda'))
                     train_total += len(y_train)
                     train_accuracy = train_correct/train_total
 
-                    # back propagation
+                    # back-propagation
                     loss.backward()
                     self.optimizer.step()
 
@@ -112,17 +115,17 @@ class MyModel(object):
                 self.writer.add_figure('predictions vs. actual', fig,epoch)
                 print("Test Accuracy %d/%d---> %.2f | Best ---> %.2f"  % (test_correct,test_total,test_accuracy,prev_test_accuracy) )
 
-                # checkpoint model if accuracy has improved between epochs
+                # update checkpoint model if accuracy improved than last epoche
                 if prev_test_accuracy  < test_accuracy:
                     print('[checkpointing model]')
                     dir = self.model_configs['save_dir']
                     if not os.path.isdir(dir):
                         os.mkdir(dir)
                     state = {
-                        'net': self.network.state_dict(),
-                        'accuracy': test_accuracy,
+                        'network': self.network.state_dict(),
                         'epoch': epoch,
-                        'accuracy_type' : 'test'
+                        'accuracy': test_accuracy,
+                        'accuracy_type': 'test'
                     }
                     torch.save(state, dir + checkpoint_filename)
                     prev_test_accuracy = test_accuracy
@@ -199,7 +202,7 @@ class MyModel(object):
                     private_pbar.update(1)
 
         probs = F.softmax(outputs,dim=1).to('cpu').numpy()
-
-
-        return probs
+        num_rows, num_cols = probs.shape
+        new_probs = probs[:num_rows,:10]
+        return new_probs
 ### END CODE HERE

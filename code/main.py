@@ -9,6 +9,7 @@ from Model import MyModel
 from DataLoader import load_data, train_valid_split, load_testing_images
 from Configure import model_configs, training_configs
 
+print(torch.__version__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("mode", help="train, test or predict")
@@ -31,9 +32,9 @@ if __name__ == '__main__':
 		train,test,orig_trainset = load_data(args.data_dir, args.mode)
 		checkpoint_dir = "ckpt_test.pth"
 		checkpoint = torch.load('../saved_models/' + checkpoint_dir)
-		model.network.load_state_dict(checkpoint['net'])
-		test_accuracy, correct, total = model.evaluate(test)
-		print("[%s%s test results] Model Accuracy %f, Total Correct %d, Total Test Samples %d" %(checkpoint_dir,time.strftime("_%Y-%m-%d_%H%M%S"),test_accuracy,correct,total))
+		model.network.load_state_dict(checkpoint['network'])
+		test_acc, correct_samples, total_samples = model.evaluate(test)
+		print("Test Result: Total Test Samples %d, Total Correct %d, Test Accuracy %f" %(time.strftime("_%Y-%m-%d_%H%M%S"),total_samples, correct_samples, test_acc))
 
 	elif args.mode == 'predict':
 		# Predicting and storing results on private testing dataset
@@ -41,10 +42,11 @@ if __name__ == '__main__':
 
 		checkpoint_dir = "ckpt_test.pth"
 		checkpoint = torch.load('../saved_models/' + checkpoint_dir)
-		model.network.load_state_dict(checkpoint['net'])
+		model.network.load_state_dict(checkpoint['network'])
 		predictions = model.predict_prob(x_test)
-		np.save(args.save_dir, predictions)
-		data_view = np.load(args.save_dir + '.npy')
+		save_path = args.save_dir + 'predictions.npy'
+		np.save(save_path, predictions)
+		data_view = np.load(save_path)
 		print("end of predict")
 
 

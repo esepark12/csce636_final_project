@@ -1,67 +1,95 @@
-### YOUR CODE HERE
-# import tensorflow as tf
-# import torch
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-"""This script defines the network.
-"""
 
-class PreActBlock(nn.Module):
-    """Version2 (pre-activation and identity map) of the Resiudal Unit Block"""
-    expansion = 1
-    def __init__(self, in_features, out_features, stride=1):
-        super(PreActBlock, self).__init__()
-        self.bn1 = nn.BatchNorm2d(in_features)
-        self.conv1 = nn.Conv2d(in_features, out_features, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_features)
-        self.conv2 = nn.Conv2d(out_features, out_features, kernel_size=3, stride=1, padding=1, bias=False)
 
-        if stride != 1 or in_features != self.expansion*out_features:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_features, self.expansion*out_features, kernel_size=1, stride=stride, bias=False)
-            )
+class LinearBottleNeck(nn.Module):
+
+    def __init__(self, in_features, out_features, stride, t=6, class_num=100):
+        super().__init__()
+
+        self.resblock = nn.Sequential( # residual block
+            nn.Conv2d(in_features, t * in_features, 1),
+            nn.BatchNorm2d(t * in_features),
+            nn.ReLU6(inplace=True),
+
+            nn.Conv2d(t * in_features, t * in_features, 3, stride=stride, padding=1, groups=t * in_features),
+            nn.BatchNorm2d(t * in_features),
+            nn.ReLU6(inplace=True),
+
+            nn.Conv2d(t * in_features, out_features, 1),
+            nn.BatchNorm2d(out_features)
+        )
+        self.out_channels = out_features
+        self.in_channels = in_features
+        self.stride = stride
+
     def forward(self, x):
-        out = F.relu(self.bn1(x))
-        shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
-        out = self.conv1(out)
-        out = self.conv2(F.relu(self.bn2(out)))
-        out += shortcut
-        return out
 
-class PreActResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(PreActResNet, self).__init__()
-        self.in_features = 64
+        resblock = self.resblock (x)
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer1 = self.stack_layer(block, 64, num_blocks[0], stride=1)
-        self.layer2 = self.stack_layer(block, 128, num_blocks[1], stride=2)
-        self.layer3 = self.stack_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self.stack_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        if self.stride == 1:
+            if self.in_channels == self.out_channels:
+                resblock  += x
 
-    def stack_layer(self, block, out_features, num_blocks, stride):
+        return resblock
+
+class MobileNetV2(nn.Module):
+
+    def __init__(self, class_num=100):
+        super().__init__()
+
+        self.preAct = nn.Sequential(
+            nn.Conv2d(3, 32, 1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU6(inplace=True)
+        )
+
+        self.layer1 = LinearBottleNeck(32, 16, 1, 1)
+        self.layer2 = self.stack_layer(2, 16, 24, 2)
+        self.layer3 = self.stack_layer(3, 24, 32, 2)
+        self.layer4 = self.stack_layer(4, 32, 64, 2)
+        self.layer5 = self.stack_layer(3, 64, 96, 1)
+        self.layer6 = self.stack_layer(3, 96, 160, 1)
+        self.layer7 = LinearBottleNeck(160, 320, 1, 6)
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(320, 1280, 1),
+            nn.BatchNorm2d(1280),
+            nn.ReLU6(inplace=True)
+        )
+
+        self.conv2 = nn.Conv2d(1280, class_num, 1)
+
+    def forward(self, x):
+        x = self.preAct(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = self.layer6(x)
+        x = self.layer7(x)
+        x = self.conv1(x)
+        x = F.adaptive_avg_pool2d(x, 1)
+        x = self.conv2(x)
+        x = x.view(x.size(0), -1)
+
+        return x
+
+    def stack_layer(self, repeat, in_features, out_features, stride):
+
         layers = []
-        strides = [stride] + [1]*(num_blocks-1)
-        for stride in strides:
-            layers.append(block(self.in_features, out_features, stride))
-            self.in_features = out_features * block.expansion
+        t = 6
+        layers.append(LinearBottleNeck(in_features, out_features, stride, t))
+
+        while repeat - 1:
+            layers.append(LinearBottleNeck(out_features, out_features, 1, t))
+            repeat -= 1
+
         return nn.Sequential(*layers)
 
-    def forward(self, x):
-        out = self.conv1(x)
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
-
 class MyNetwork(object):
-    def getPreActResNet():
-        return PreActResNet(PreActBlock, [2,2,2,2])
-
-### END CODE HERE
+    def getMobilenNetV2():
+        return MobileNetV2()
