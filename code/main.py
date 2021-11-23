@@ -9,8 +9,6 @@ from Model import MyModel
 from DataLoader import load_data, train_valid_split, load_testing_images
 from Configure import model_configs, training_configs
 
-print(torch.__version__)
-
 parser = argparse.ArgumentParser()
 parser.add_argument("mode", help="train, test or predict")
 parser.add_argument("data_dir", help="path to the data")
