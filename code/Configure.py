@@ -1,8 +1,8 @@
-import ImageUtils
-# Below configures are examples, 
+# Below configures are examples,
 # you can modify them as you wish.
 
 ### YOUR CODE HERE
+import ImageUtils
 
 model_configs = {
 	"name": 'MyModel',
@@ -12,7 +12,7 @@ model_configs = {
 
 training_configs = {
 	"experiment_name": 'test-ResNetProp-ImageStandard',
-	"train_augmentation" : ImageUtils.ImgTransformStandard,
+	"train_augmentation" : ImageUtils.parse_record(None,training=1),
 	"batch_size" : 128,
 	"initial_lr": 0.1,
 	"learn_rate_schedule" : {80: 0.1, 110: 0.05, 200: 0.002, 300: 0.001, 350: 0.0001},

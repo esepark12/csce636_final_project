@@ -90,5 +90,5 @@ class MobileNetV2(nn.Module):
         return nn.Sequential(*layers)
 
 class MyNetwork(object):
-    def mobilenetv2():
+    def getMobilenNetV2():
         return MobileNetV2()

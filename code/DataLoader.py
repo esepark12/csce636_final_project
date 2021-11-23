@@ -5,7 +5,6 @@ from Configure import model_configs, training_configs
 import torch, torchvision
 import torchvision.transforms as transforms
 import PrivateDataset
-#import utils
 """This script implements the functions for reading data.
 """
 CIFAR_norm_means = (0.4914, 0.4822, 0.4465)

@@ -8,15 +8,12 @@ from Network3 import MyNetwork
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import tqdm
-
 import matplotlib
 matplotlib.use('Agg') # command-line use only
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
-#import utils as utils
 
-"""This script defines the training, validation and testing process.
-"""
+
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck')
 
@@ -25,7 +22,7 @@ class MyModel(object):
     def __init__(self, configs):
         self.model_configs = configs
         #self.network = torch.nn.DataParallel(MyNetwork.ResNetV2Prop())
-        self.network = torch.nn.DataParallel(MyNetwork.mobilenetv2())
+        self.network = torch.nn.DataParallel(MyNetwork.getMobilenNetV2())
         self.model_setup()
 
     def model_setup(self):
@@ -78,7 +75,7 @@ class MyModel(object):
         criterion = nn.CrossEntropyLoss()
 
         max_epoch = configs['max_epoch']
-
+        checkpoint_filename = "ckpt_test.pth"
         for epoch in range(max_epoch):
             self.network.train()
             with tqdm.tqdm(total = len(self.train_loader)) as epoch_pbar:
@@ -127,7 +124,7 @@ class MyModel(object):
                         'epoch': epoch,
                         'accuracy_type' : 'test'
                     }
-                    torch.save(state, dir + 'ckpt.pth')
+                    torch.save(state, dir + checkpoint_filename)
                     prev_test_accuracy = test_accuracy
 
                 self.writer.add_scalar('Accuracy/test',test_accuracy,epoch)
@@ -193,7 +190,7 @@ class MyModel(object):
         self.network.eval()
 
         private_loader = torch.utils.data.DataLoader(x,100,shuffle=False)
-        outputs = torch.empty(len(x),10)
+        outputs = torch.empty(len(x),100) #10
         with torch.no_grad():
             with tqdm.tqdm(total = len(private_loader)) as private_pbar:
                 for batch_idx, xi in enumerate(private_loader):

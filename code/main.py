@@ -29,7 +29,7 @@ if __name__ == '__main__':
 	elif args.mode == 'test':
 		# Testing on public testing dataset
 		train,test,orig_trainset = load_data(args.data_dir, args.mode)
-		checkpoint_dir = "ckpt.pth"#"best_ckpt_ResNetProp_Standard.pth"
+		checkpoint_dir = "ckpt_test.pth"
 		checkpoint = torch.load('../saved_models/' + checkpoint_dir)
 		model.network.load_state_dict(checkpoint['net'])
 		test_accuracy, correct, total = model.evaluate(test)
@@ -39,8 +39,7 @@ if __name__ == '__main__':
 		# Predicting and storing results on private testing dataset
 		x_test = load_testing_images(args.data_dir)
 
-		#checkpoint_dir = "best_ckpt_ResNetProp_Standard.pth"
-		checkpoint_dir = "ckpt.pth"
+		checkpoint_dir = "ckpt_test.pth"
 		checkpoint = torch.load('../saved_models/' + checkpoint_dir)
 		model.network.load_state_dict(checkpoint['net'])
 		predictions = model.predict_prob(x_test)

@@ -1,102 +1,56 @@
-import numpy as np
 import torch
-import torchvision
 import torchvision.transforms as transforms
 from imgaug import augmenters as iaa
-import imgaug as ia
-import utils 
-
+import numpy as np
 """This script implements the functions for data augmentation
 and preprocessing.
 """
+CIFAR_norm_means = (0.4914, 0.4822, 0.4465)
+CIFAR_norm_stds = (0.2470, 0.2435, 0.2616)
 
-def compute_channel_mean_std(tensor):
-    '''
-    Computes the per channel mean / standard deviation used for
-    normalization in the image transformations.
-    '''
-    mean = torch.mean(tensor,[0,2,3]) # assumes tensor is
-    return
+def parse_record(record, training):
+  """Parse a record to an image and perform data preprocessing.
+
+  Args:
+      record: An array of shape [3072,]. One row of the x_* matrix.
+      training: A boolean. Determine whether it is in training mode.
+
+  Returns:
+      image: An array of shape [32, 32, 3].
+  """
+  ### YOUR CODE HERE
+  image = None
+  ### END CODE HERE
+
+  image = preprocess_image(image, training) # If any.
+
+  return image
 
 
-class ImgAugTransformStandard:
-  def __init__(self):
-    self.aug = iaa.Sequential([
-        iaa.Fliplr(0.5), # random flip (horizontal)
-        iaa.size.CropAndPad(keep_size=True), # random crops
+def preprocess_image(image, training):
+  """Preprocess a single image of shape [height, width, depth].
+
+  Args:
+      image: An array of shape [32, 32, 3].
+      training: A boolean. Determine whether it is in training mode.
+
+  Returns:
+      image: An array of shape [32, 32, 3]. The processed image.
+  """
+  ### YOUR CODE HERE
+  if training:
+    image = transforms.Compose([
+      transforms.RandomCrop(32, padding=4),
+      transforms.RandomHorizontalFlip(),
+      transforms.ToTensor(),
+      transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds)
     ])
+  ### END CODE HERE
 
-  def __call__(self, img):
-    img = np.array(img)
-    
-    return self.aug.augment_image(img) 
-
-class ImgAugTransform1:
-  def __init__(self):
-    self.aug = iaa.Sequential([
-        iaa.size.CropAndPad(keep_size=True), # random crops
-        iaa.Fliplr(0.5), # random flips
-        iaa.Affine(translate_percent={'x':(-0.1,0.1), 'y':(-0.1,0.1)}), # random translations
-        iaa.Affine(rotate=(-20, 20), mode='symmetric'), # random rotations
-    ])
-
-  def __call__(self, img):
-    img = np.array(img)
-    
-    return self.aug.augment_image(img)
+  return image
 
 
-class ImgAugTransform2:
-  
-  def __init__(self):
-      self.aug = iaa.Sequential([
-        iaa.size.CropAndPad(keep_size=True), # random crops
-        iaa.Fliplr(0.5), # random flips
-        iaa.Affine(
-        scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
-        translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-        rotate=(-20, 20),
-        shear=(-8, 8)
-    )
-    ])
-    
-  def __call__(self, img):
-    img = np.array(img)
-    
-    return self.aug.augment_image(img)
+# Other functions
+### YOUR CODE HERE
 
-
-ImgTransform1 = transforms.Compose([
-  transforms.RandomCrop(32, padding=4),
-  transforms.RandomHorizontalFlip(),
-  transforms.RandomRotation(10),
-  transforms.RandomAffine(0,translate=(0.1,0.1)),
-  transforms.RandomGrayscale(p=0.2),
-  transforms.ToTensor(),
-  transforms.Normalize(utils.cifar_10_norm_mean, utils.cifar_10_norm_std)
-])
-
-ImgTransform2 = transforms.Compose([
-  transforms.RandomCrop(32, padding=4),
-  transforms.RandomHorizontalFlip(),
-  transforms.RandomRotation(20),
-  transforms.RandomAffine(0,translate=(0.2,0.2)),
-  transforms.RandomGrayscale(p=0.2),
-  transforms.ToTensor(),
-  transforms.Normalize(utils.cifar_10_norm_mean, utils.cifar_10_norm_std)
-])
-
-ImgTransform3 = transforms.Compose([
-  transforms.RandomCrop(32, padding=4),
-  transforms.RandomHorizontalFlip(),
-  transforms.RandomGrayscale(p=0.1),
-  transforms.ToTensor(),
-  transforms.Normalize(utils.cifar_10_norm_mean, utils.cifar_10_norm_std)
-])
-
-ImgTransformStandard = transforms.Compose([
-  transforms.RandomCrop(32, padding=4),
-  transforms.RandomHorizontalFlip(),
-  transforms.ToTensor(),
-  transforms.Normalize(utils.cifar_10_norm_mean, utils.cifar_10_norm_std)
-])
+### END CODE HERE
