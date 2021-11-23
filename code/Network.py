@@ -35,7 +35,7 @@ class LinearBottleNeck(nn.Module):
 
         return resblock
 
-class MobileNetV2(nn.Module):
+class MyMobileNet(nn.Module):
 
     def __init__(self, class_num=100):
         super().__init__()
@@ -91,5 +91,5 @@ class MobileNetV2(nn.Module):
         return nn.Sequential(*layers)
 
 class MyNetwork(object):
-    def getMobilenNetV2():
-        return MobileNetV2()
+    def getMyMobileNet():
+        return MyMobileNet()

@@ -21,8 +21,7 @@ class MyModel(object):
 
     def __init__(self, configs):
         self.model_configs = configs
-        #self.network = torch.nn.DataParallel(MyNetwork.ResNetV2Prop())
-        self.network = torch.nn.DataParallel(MyNetwork.getMobilenNetV2())
+        self.network = torch.nn.DataParallel(MyNetwork.getMyMobileNet())
         self.model_setup()
 
     def model_setup(self):

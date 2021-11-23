@@ -32,7 +32,7 @@ if __name__ == '__main__':
 		checkpoint = torch.load('../saved_models/' + checkpoint_dir)
 		model.network.load_state_dict(checkpoint['network'])
 		test_acc, correct_samples, total_samples = model.evaluate(test)
-		print("Test Result: Total Test Samples %d, Total Correct %d, Test Accuracy %f" %(time.strftime("_%Y-%m-%d_%H%M%S"),total_samples, correct_samples, test_acc))
+		print("Test Result: Total Test Samples %d, Total Correct %d, Test Accuracy %f" %(total_samples, correct_samples, test_acc))
 
 	elif args.mode == 'predict':
 		# Predicting and storing results on private testing dataset
