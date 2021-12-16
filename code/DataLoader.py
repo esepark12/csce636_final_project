@@ -1,10 +1,14 @@
 import os
 import pickle
+import tkinter
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 from Configure import model_configs, training_configs
 import torch, torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
+from skimage import data, io
 """This script implements the functions for reading data.
 """
 CIFAR_norm_means = (0.4914, 0.4822, 0.4465)
@@ -73,7 +77,7 @@ def load_testing_images(data_dir):
         transforms.ToTensor(),
         transforms.Normalize(CIFAR_norm_means, CIFAR_norm_stds) # normalize dataset
     ])
-    file_path = data_dir + '/private_test_images.npy'
+    file_path = data_dir + '/private_test_images_v3.npy'
     images = np.load(file_path)
     x_test = PrivateTestImage(file_path,transform=default_transform)
     ### END CODE HERE
@@ -114,20 +118,32 @@ def train_valid_split(train, orig_trainset, train_ratio=0.8):
 class PrivateTestImage(Dataset):
 
     def __init__(self, file_path, transform=None):
-        self.images = np.load(file_path)
+        #self.images = np.load(file_path)
+
+        images = np.load(file_path)
+        num_images = images.shape[0]
+        self.images = np.empty(shape=(num_images,32,32,3), dtype=np.uint8)
+        for i in range(0,num_images):
+
+            self.images[i] = np.reshape(images[i],(32,32,3))
+
+            #For checking the image is in right shape:
+            #io.imshow(self.images[i])
+            #io.show()
+
         if transform is not None:
             self.transform = transform
         else:
             self.transform = None
 
     def __len__(self):
-        return self.images.shape[0] # image batch is shape [n,32,32,3]
+        return self.images.shape[0]
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        sample = self.images[idx] # [n,3,32,32]
+        sample = self.images[idx]
 
         if self.transform:
             sample = self.transform(sample)

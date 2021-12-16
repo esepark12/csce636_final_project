@@ -45,6 +45,10 @@ if __name__ == '__main__':
 		save_path = args.save_dir + 'predictions.npy'
 		np.save(save_path, predictions)
 		data_view = np.load(save_path)
+		#convert to .csv file for checking:
+		#import pandas as pd
+		#csv_data = pd.DataFrame(data_view)
+		#csv_data.to_csv("../predictions.csv")
 		print("end of predict")
 
 
